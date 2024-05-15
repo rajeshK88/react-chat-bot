@@ -2,14 +2,14 @@ import { Box, Card, CardActions, CardContent, CardHeader, CircularProgress, Text
 import { useState } from 'react'
 
 import ArrowCircleUpRoundedIcon from '@mui/icons-material/ArrowCircleUpRounded'
-import axios from 'axios'
 import ReactMarkdown from 'react-markdown'
 import { v4 as uuidv4 } from 'uuid'
 
 import { useEffect } from 'react'
-import { getUserSessionHistory } from './api'
+import { chatSync, getUserSessionHistory } from './api'
 
 const Chat = ({ userSessionId }) => {
+  const [sessionId, setSessionId] = useState('new')
   const [chat, setChat] = useState('')
   const [loading, setLoading] = useState(false)
   const theme = useTheme()
@@ -28,104 +28,90 @@ const Chat = ({ userSessionId }) => {
       if (e.key === 'Enter') {
         setLoading(true)
         e.preventDefault()
-        setMessages((prevMessages) => [...prevMessages, { uuid: uuidv4(), content: chat, type: 'You' }])
+        // add the message to the chat
+        setMessages((prevMessages) => [...prevMessages, { uuid: uuidv4(), content: chat, type: 'human' }])
         setChat('')
-        const headers = {
-          'X-API-Key': process.env.REACT_APP_API_KEY,
+        // Call the api
+        const response = await chatSync(sessionId, chat)
+        // Set the new session id
+        if (!sessionId || sessionId === 'new') {
+          setSessionId(response.body.sessionid)
         }
-
-        const response = await axios.post(
-          `${process.env.REACT_APP_API_HOST}/chat`,
-          {
-            userid: 'ssahoo1',
-            sessionid: '938840d0938dmdi',
-            question: chat,
-          },
-          {
-            headers,
-          }
-        )
-        const res = response.data.body.answer
-        setMessages((prevMessages) => [...prevMessages, { uuid: messageId, content: res, type: 'AI' }])
+        // add the ai bot response to the chat
+        setMessages((prevMessages) => [...prevMessages, { uuid: messageId, content: response?.body?.answer || '', type: 'ai' }])
         setLoading(false)
       }
     } catch (e) {
       console.error(e)
-      setMessages((prevMessages) => [...prevMessages, { uuid: messageId, content: 'Something went wrong', type: 'AI' }])
+      setMessages((prevMessages) => [...prevMessages, { uuid: messageId, content: 'Something went wrong', type: 'ai' }])
       setLoading(false)
     }
   }
 
   useEffect(() => {
-   // console.log(messages)
-  }, [messages])
-
-  useEffect(() => {
     const fetchData = async () => {
       // get all the conversation id
-      const userSessionHistory = await getUserSessionHistory(userSessionId)   
-      if(userSessionHistory.length) {
-        const messages = userSessionHistory[0]?.History?.L?.map(messageHistory => {
+      const userSessionHistory = await getUserSessionHistory(userSessionId)
+      if (userSessionHistory.length) {
+        const messages = userSessionHistory[0]?.History?.L?.map((messageHistory) => {
           const validMessage = messageHistory?.M
           return {
             uuid: uuidv4(),
             content: validMessage?.data?.M?.content?.S ?? '',
-            type: validMessage?.type?.S ?? ''
+            type: validMessage?.type?.S ?? '',
           }
         })
         setMessages(messages)
       }
+      setSessionId(userSessionId)
     }
     userSessionId && fetchData()
   }, [userSessionId])
-
-  const handleChange = (e) => {
-    setChat(e.target.value)
-  }
 
   return (
     <Box justifyContent='space-between' display='flex' flexDirection='column' height='100%'>
       <Card>
         <CardContent style={{ height: '75vh', overflowY: 'scroll' }}>
           {messages.map((message, index) => (
-              <Card sx={{ background: theme.palette.common.black }} elevation={24} display={'flex'} key={index}>
-                <CardHeader
-                  sx={{ p: 1 }}
-                  title={
-                    <Box display='flex' gap={1}>
-                      {message.type.toLowerCase() === 'ai' ? (
-                        <>
-                          <img height={30} width={30} src='./ai.png' alt='ai_bot.png'/>
-                          <Typography variant='body1'>{message.type}</Typography>
-                        </>
-                      ) : (
-                        <>
-                          <img height={30} width={30} src='./human.png' alt='human.png'/>
-                          <Typography variant='body1'>{message.type}</Typography>
-                        </>
-                      )}
-                    </Box>
-                  } />
-                <CardContent sx={{ pl: 2, pt: 0, pb: 0 }}>{(message.type.toLowerCase() === 'you' || message.type.toLowerCase() === 'human') && message.content}</CardContent>
-                <CardContent sx={{ justifyContent: 'right' }}>
-                  {message.type.toLowerCase() === 'ai' && (
-                      <ReactMarkdown>{message.content}</ReactMarkdown>
-                  )}
-                </CardContent>
-              </Card>
+            <Card sx={{ background: theme.palette.common.black }} elevation={24} display={'flex'} key={index}>
+              <CardHeader
+                sx={{ p: 1 }}
+                title={
+                  <Box display='flex' gap={1}>
+                    {message.type.toLowerCase() === 'ai' ? (
+                      <>
+                        <img height={30} width={30} src='./ai.png' alt='ai_bot.png' />
+                        <Typography variant='body1'>AI Bot</Typography>
+                      </>
+                    ) : (
+                      <>
+                        <img height={30} width={30} src='./human.png' alt='human.png' />
+                        <Typography variant='body1'>You</Typography>
+                      </>
+                    )}
+                  </Box>
+                }
+              />
+              <CardContent sx={{ pl: 2, pt: 0, pb: 0 }}>
+                {(message.type.toLowerCase() === 'you' || message.type.toLowerCase() === 'human') && message.content}
+              </CardContent>
+              <CardContent sx={{ justifyContent: 'right' }}>
+                {message.type.toLowerCase() === 'ai' && <ReactMarkdown>{message.content}</ReactMarkdown>}
+              </CardContent>
+            </Card>
           ))}
         </CardContent>
         <CardActions>
           <TextField
             onKeyDown={onEnter}
+            onChange={(e) => setChat(e.target.value)}
             disabled={loading}
             value={chat}
             fullWidth
-            onChange={handleChange}
             variant='outlined'
             placeholder='Type here....'
             InputProps={{
-              endAdornment: loading ? <CircularProgress /> : <ArrowCircleUpRoundedIcon color='primary' fontSize='large'></ArrowCircleUpRoundedIcon>,
+              endAdornment: loading ? <CircularProgress /> : <ArrowCircleUpRoundedIcon color='primary' fontSize='large' />,
             }}
           />
         </CardActions>
