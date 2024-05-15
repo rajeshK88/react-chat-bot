@@ -8,19 +8,21 @@ import { v4 as uuidv4 } from 'uuid'
 import { useEffect } from 'react'
 import { chatSync, getUserSessionHistory } from './api'
 
+const defaultMessages = [
+  {
+    uuid: uuidv4(),
+    content:
+      'Hi, I am your Jefferies Policy Chatbot Assistant. You can ask me anything about Jefferies company policies like HR, Compensation, Leave, Work-from-home, Benefits etc',
+    type: 'AI',
+  },
+]
+
 const Chat = ({ userSessionId }) => {
   const [sessionId, setSessionId] = useState('new')
   const [chat, setChat] = useState('')
   const [loading, setLoading] = useState(false)
   const theme = useTheme()
-  const [messages, setMessages] = useState([
-    {
-      uuid: uuidv4(),
-      content:
-        'Hi, I am your Jefferies Policy Chatbot Assistant. You can ask me anything about Jefferies company policies like HR, Compensation, Leave, Work-from-home, Benefits etc',
-      type: 'AI',
-    },
-  ])
+  const [messages, setMessages] = useState(defaultMessages)
 
   const onEnter = async (e) => {
     const messageId = uuidv4()
@@ -65,9 +67,16 @@ const Chat = ({ userSessionId }) => {
       }
       setSessionId(userSessionId)
     }
-    userSessionId && fetchData()
+    // If existing sesion id is present then fetch the data or else start new session
+    if (userSessionId) {
+      fetchData()
+    } else {
+      setSessionId('new')
+      setMessages(defaultMessages)
+    }
   }, [userSessionId])
 
+  
   return (
     <Box justifyContent='space-between' display='flex' flexDirection='column' height='100%'>
       <Card>

@@ -14,6 +14,7 @@ import Typography from '@mui/material/Typography'
 import * as React from 'react'
 import Chat from './Chat'
 import { getUserSessions } from './api'
+import { Button } from '@mui/material'
 
 const drawerWidth = 240
 
@@ -52,8 +53,7 @@ export default function ChatDashboard() {
         }}
         variant='permanent'
         anchor='left'>
-        <Toolbar />
-
+        <Button variant='outlined' onClick={() => setUserSessionId()} sx={{borderColor: '#1976d2', m: 2}}>New Chat</Button>
         <Divider />
         <List>
           {userSessions.map((session, index) => (
