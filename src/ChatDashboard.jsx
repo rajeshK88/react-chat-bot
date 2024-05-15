@@ -17,8 +17,9 @@ import { getUserSessions } from './api'
 
 const drawerWidth = 240
 
-export default function DrawerLeft() {
+export default function ChatDashboard() {
   const [userSessions, setUserSessions] = React.useState([])
+  const [userSessionId, setUserSessionId] = React.useState('')
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -29,6 +30,7 @@ export default function DrawerLeft() {
 
     fetchData()
   }, [])
+
   return (
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
@@ -55,12 +57,12 @@ export default function DrawerLeft() {
         <Divider />
         <List>
           {userSessions.map((session, index) => (
-            <ListItem key={index} disablePadding>
+            <ListItem key={index} disablePadding onClick={() => setUserSessionId(session[0]?.SessionId?.S)}>
               <ListItemButton>
                 <ListItemIcon>
                   <QuestionAnswerIcon />
                 </ListItemIcon>
-                <ListItemText primary={JSON.parse(session[0]?.chatTitleMessage?.S || '')} />
+                <ListItemText primary={JSON.parse(session[0]?.chatTitleMessage?.S || '')}/>
               </ListItemButton>
             </ListItem>
           ))}
@@ -69,7 +71,7 @@ export default function DrawerLeft() {
       </Drawer>
       <Box component='main' sx={{ flexGrow: 1, bgcolor: 'background.default', p: 3 }}>
         <Toolbar />
-        <Chat />
+        <Chat userSessionId={userSessionId} />
       </Box>
     </Box>
   )

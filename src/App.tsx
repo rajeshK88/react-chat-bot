@@ -1,10 +1,10 @@
 import './App.css';
-import DrawerLeft from './DrawerLeft';
+import ChatDashboard from './ChatDashboard';
 
 
 function App() {
   return (
-    <DrawerLeft />
+    <ChatDashboard />
   );
 }
 

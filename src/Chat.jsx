@@ -7,8 +7,9 @@ import ReactMarkdown from 'react-markdown'
 import { v4 as uuidv4 } from 'uuid'
 
 import { useEffect } from 'react'
+import { getUserSessionHistory } from './api'
 
-const Chat = () => {
+const Chat = ({ userSessionId }) => {
   const [chat, setChat] = useState('')
   const [loading, setLoading] = useState(false)
   const theme = useTheme()
@@ -59,6 +60,25 @@ const Chat = () => {
    // console.log(messages)
   }, [messages])
 
+  useEffect(() => {
+    const fetchData = async () => {
+      // get all the conversation id
+      const userSessionHistory = await getUserSessionHistory(userSessionId)   
+      if(userSessionHistory.length) {
+        const messages = userSessionHistory[0]?.History?.L?.map(messageHistory => {
+          const validMessage = messageHistory?.M
+          return {
+            uuid: uuidv4(),
+            content: validMessage?.data?.M?.content?.S ?? '',
+            type: validMessage?.type?.S ?? ''
+          }
+        })
+        setMessages(messages)
+      }
+    }
+    userSessionId && fetchData()
+  }, [userSessionId])
+
   const handleChange = (e) => {
     setChat(e.target.value)
   }
@@ -73,7 +93,7 @@ const Chat = () => {
                   sx={{ p: 1 }}
                   title={
                     <Box display='flex' gap={1}>
-                      {message.type === 'AI' ? (
+                      {message.type.toLowerCase() === 'ai' ? (
                         <>
                           <img height={30} width={30} src='./ai.png' alt='ai_bot.png'/>
                           <Typography variant='body1'>{message.type}</Typography>
@@ -85,13 +105,11 @@ const Chat = () => {
                         </>
                       )}
                     </Box>
-                  }></CardHeader>
-                <CardContent sx={{ pl: 2, pt: 0, pb: 0 }}>{message.type === 'You' && message.content}</CardContent>
+                  } />
+                <CardContent sx={{ pl: 2, pt: 0, pb: 0 }}>{(message.type.toLowerCase() === 'you' || message.type.toLowerCase() === 'human') && message.content}</CardContent>
                 <CardContent sx={{ justifyContent: 'right' }}>
-                  {message.type === 'AI' && (
-                    <>
+                  {message.type.toLowerCase() === 'ai' && (
                       <ReactMarkdown>{message.content}</ReactMarkdown>
-                    </>
                   )}
                 </CardContent>
               </Card>
